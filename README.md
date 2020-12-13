@@ -1,5 +1,7 @@
 # Caddy Storage Migrator
 
+[![Pipeline](https://gitlab.masip.cat/masipcat/caddy-storage-migrator/badges/master/pipeline.svg)](https://gitlab.masip.cat/masipcat/caddy-storage-migrator/-/commits/master) [![Coverage](https://gitlab.masip.cat/masipcat/caddy-storage-migrator/badges/master/coverage.svg)](https://gitlab.masip.cat/masipcat/caddy-storage-migrator/-/commits/master)
+
 This is a simple command line application to import/export storage data from Caddy v2 (or Certmagic).
 
 Right now supports the following modules:
