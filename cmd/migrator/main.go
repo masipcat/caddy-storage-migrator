@@ -5,65 +5,77 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/caddyserver/certmagic"
 	migrator "github.com/masipcat/caddy-storage-migrator"
 )
 
+type command struct {
+	Usage string
+	NArgs int
+	Func  func(args []string)
+}
+
 func main() {
-	var configFile string
-	flag.StringVar(&configFile, "config", "", "Path to json file")
-
-	importCmd := flag.NewFlagSet("import", flag.ExitOnError)
-	importCmd.Usage = func() {
-		fmt.Println("migrator [-config file.json] import SOURCE STORAGE_NAME")
-	}
-
-	exportCmd := flag.NewFlagSet("export", flag.ExitOnError)
-	exportCmd.Usage = func() {
-		fmt.Println("migrator [-config file.json] export STORAGE_NAME DEST")
-	}
-
+	configFile := flag.String("config", "", "Path to JSON file")
 	flag.Parse()
-
-	config, err := loadConfig(configFile)
+	config, err := loadConfig(*configFile)
 	if err != nil {
-		log.Fatalf("%v", err)
+		fmt.Printf("%v", err)
+		os.Exit(1)
 	}
 
-	var cmd = ""
+	commands := map[string]*command{
+		"import": {
+			Usage: "migrator [-config FILE] import SOURCE STORAGE",
+			NArgs: 2,
+			Func: func(args []string) {
+				source, name := args[0], args[1]
+				s, err := migrator.InitStorage(name, config)
+				if err != nil {
+					fmt.Printf("Failed to init storage: %v", err)
+					os.Exit(1)
+				}
+				migrator.ImportFiles(s.(certmagic.Storage), source)
+			},
+		},
+		"export": {
+			Usage: "migrator [-config FILE] export STORAGE DEST",
+			NArgs: 2,
+			Func: func(args []string) {
+				name, dest := args[0], args[1]
+				s, err := migrator.InitStorage(name, config)
+				if err != nil {
+					fmt.Printf("Failed to init storage: %v", err)
+					os.Exit(1)
+				}
+				migrator.ExportFiles(s.(certmagic.Storage), dest)
+			},
+		},
+	}
+
 	if flag.NArg() > 0 {
-		cmd = flag.Arg(0)
+		cmdName := flag.Arg(0)
+		if cmd, found := commands[cmdName]; found {
+			cmd.Run(flag.Args()[1:])
+			return
+		}
 	}
 
-	switch cmd {
-	case "import":
-		importCmd.Parse(flag.Args()[1:])
-		if importCmd.NArg() < 2 {
-			importCmd.Usage()
-			os.Exit(1)
-		}
-		s, err := migrator.InitStorage(importCmd.Arg(1), config)
-		if err != nil {
-			log.Fatalf("Failed to init storage: %v", err)
-		}
-		migrator.ImportFiles(s.(certmagic.Storage), importCmd.Arg(0))
-	case "export":
-		exportCmd.Parse(flag.Args()[1:])
-		if exportCmd.NArg() < 2 {
-			exportCmd.Usage()
-			os.Exit(1)
-		}
-		s, err := migrator.InitStorage(exportCmd.Arg(0), config)
-		if err != nil {
-			log.Fatalf("Failed to init storage: %v", err)
-		}
-		migrator.ExportFiles(s.(certmagic.Storage), exportCmd.Arg(1))
-	default:
-		importCmd.Usage()
-		exportCmd.Usage()
+	fmt.Println("Usage:")
+	for _, c := range commands {
+		fmt.Printf("\t\t%s\n", c.Usage)
+	}
+}
+
+func (c *command) Run(args []string) {
+	minArgs := len(args)
+	if minArgs >= c.NArgs {
+		c.Func(args)
+		os.Exit(0)
+	} else {
+		fmt.Printf("Missing %d argument(s). Usage:\n\n\t\t%s\n\n", c.NArgs-minArgs, c.Usage)
 		os.Exit(1)
 	}
 }
@@ -83,7 +95,7 @@ func loadConfig(configFile string) ([]byte, error) {
 	}
 	data, found := config["storage"]
 	if !found {
-		return nil, fmt.Errorf("key 'storage' not found")
+		return nil, fmt.Errorf("Key 'storage' not found in json")
 	}
 	return data, nil
 }

@@ -100,42 +100,51 @@ func TestImport(t *testing.T) {
 	s, err := InitStorage("dummy", config)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	ds := s.(*DummyStorage)
 
 	if ds.Value != "test json unmarshal" {
-		t.Failed()
+		t.Error("Expected value not found")
+		return
 	}
 
 	if ds.provisioned == false {
 		t.Error("Function Provision() not called")
+		return
 	}
 
 	if ds.validated == false {
 		t.Error("Function Validate() not called")
+		return
 	}
 
 	caddyPath, err := ioutil.TempDir(".", "test-")
 	if err != nil {
-		panic(err)
+		t.Error(err)
+		return
 	}
 	defer os.RemoveAll(caddyPath)
 	f, err := ioutil.TempFile(caddyPath, "key-")
 	defer f.Close()
 	if err != nil {
-		panic(err)
+		t.Error(err)
+		return
 	}
 	f.Write([]byte("aaaa"))
 	err = f.Sync()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	err = ImportFiles(ds, caddyPath)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if len(ds.stored) == 0 {
 		t.Error("File not stored")
+		return
 	}
 }
 
@@ -152,17 +161,20 @@ func TestExport(t *testing.T) {
 	_, err := InitStorage("dumy", config)
 	if err == nil {
 		t.Errorf("Should fail. Invalid storage name")
+		return
 	}
 
 	s, err := InitStorage("dummy", config)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	ds := s.(*DummyStorage)
 
 	dest, err := ioutil.TempDir(".", "test-")
 	if err != nil {
-		panic(err)
+		t.Error(err)
+		return
 	}
 	defer os.RemoveAll(dest)
 	ExportFiles(ds, dest)
@@ -175,10 +187,12 @@ func TestExport(t *testing.T) {
 
 	if len(exported) == 0 {
 		t.Errorf("Nothing exported")
+		return
 	}
 
 	data, err := ioutil.ReadFile(filepath.Join(dest, "cert1"))
 	if !bytes.Equal(data, fileContent) {
 		t.Errorf("File content mismatch")
+		return
 	}
 }

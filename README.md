@@ -31,7 +31,8 @@ Now we can **import** existing data with the following command:
 ./migrator export <module-name> ./any/folder
 ```
 
-Optionally the command accepts the argument `-config path/to/file.json` with the storage configuration:
+Optionally the command accepts the flag `-config path/to/file.json`.
+The JSON file should contain at least the storage configuration:
 
 ```json
 {
