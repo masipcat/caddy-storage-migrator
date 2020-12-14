@@ -103,7 +103,7 @@ func ExportFiles(storage certmagic.Storage, dest string) error {
 	if err != nil {
 		return err
 	}
-	keys, err := storage.List("*", true)
+	keys, err := storage.List("", true)
 	if err != nil {
 		return err
 	}

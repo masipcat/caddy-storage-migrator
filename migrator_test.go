@@ -47,7 +47,7 @@ func (ds *DummyStorage) Exists(key string) bool {
 
 func (ds *DummyStorage) List(prefix string, recursive bool) ([]string, error) {
 	keys := make([]string, 0, len(ds.stored))
-	if prefix == "*" {
+	if prefix == "" {
 		for k := range ds.stored {
 			keys = append(keys, k)
 		}
